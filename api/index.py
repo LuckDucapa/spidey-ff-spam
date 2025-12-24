@@ -11,7 +11,7 @@ app = Flask(__name__)
 TG_BOT_TOKEN = "8292738024:AAHjghTZvUZmLKV091qGe3A5yr_OdFIYv8I" 
 
 # 2. Your Personal Telegram User ID (So the bot sends the command to the chat where Termux is listening)
-ADMIN_CHAT_ID = "8508231922"
+ADMIN_CHAT_ID = "-1003690232509"
 # ==========================================
 
 @app.route('/spam', methods=['GET'])
