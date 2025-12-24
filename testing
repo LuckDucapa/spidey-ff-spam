@@ -1,0 +1,129 @@
+
+                if "1200" in data.hex()[0:4] and b"/sm" in data:
+                    try:
+                        # Split the message to get the target player ID
+                        command_split = re.split("/sm ", str(data))
+                        if len(command_split) > 1:
+                            player_id_str = command_split[1].split('(')[0].strip()
+
+                            # Replace "***" if present
+                            if "***" in player_id_str:
+                                player_id_str = player_id_str.replace("***", "106")
+                            
+                            # Get the UID of the user who sent the command to send a reply
+                            json_result = get_available_room(data.hex()[10:])
+                            parsed_data = json.loads(json_result)
+                            uid = parsed_data["5"]["data"]["1"]["data"]
+
+                            # Send an initial confirmation message
+                            clients.send(
+                                self.GenResponsMsg(
+                                    f"[C][B][1E90FF]Spamming Join Requests to {fix_num(player_id_str)}...", uid
+                                )
+                            )
+
+                            # Create the request packet for the target player
+                            invskwad_packet = self.request_skwad(player_id_str)
+
+                            # Set how many times you want to send the request
+                            spam_count = 30  # You can increase or decrease this value
+
+                            # Loop to send the packet multiple times
+                            for _ in range(spam_count):
+                                socket_client.send(invskwad_packet)
+                                sleep(0.1)  # A small delay to prevent server issues
+
+                            # Send a final success message
+                            clients.send(
+                                self.GenResponsMsg(
+                                    f"[C][B][00FF00]Successfully Sent {spam_count} Join Requests!", uid
+                                )
+                            )
+
+                            # Clean up the bot's state by leaving any potential squad
+                            sleep(3)
+                            leavee = self.leave_s()
+                            socket_client.send(leavee)
+                    except Exception as e:
+                        logging.error(f"Error in /sm command: {e}. Restarting.")
+                        try:
+                            json_result = get_available_room(data.hex()[10:])
+                            parsed_data = json.loads(json_result)
+                            uid = parsed_data["5"]["data"]["1"]["data"]
+                            clients.send(self.GenResponsMsg("[C][B][FF0000]An error occurred. Restarting bot...", uid))
+                        except:
+                            pass 
+                        restart_program(
+                        
+                        
+                        
+                        
+                if "1200" in data.hex()[0:4] and b"/sm" in data:
+                    try:
+                        # Get the UID of the user who sent the command to send a reply
+                        json_result = get_available_room(data.hex()[10:])
+                        parsed_data = json.loads(json_result)
+                        uid = parsed_data["5"]["data"]["1"]["data"]
+
+                        # Improved Parsing: Use a regular expression to find the ID more reliably
+                        match = re.search(r'/sm\s*(\d+)', str(data))
+                        
+                        if match:
+                            player_id_str = match.group(1)
+
+                            # Send an initial confirmation message
+                            clients.send(
+                                self.GenResponsMsg(
+                                    f"[C][B][1E90FF]Request received! Preparing to spam {fix_num(player_id_str)}...", uid
+                                )
+                            )
+
+                            # --- START OF THE FIX ---
+                            # 1. Ensure the bot is not in a squad before starting the spam.
+                            # This is the critical step that was missing.
+                            logging.info("Resetting bot state to solo before /sm spam.")
+                            socket_client.send(self.leave_s())
+                            time.sleep(0.5)  # Allow a moment for the leave command to process
+                            socket_client.send(self.changes(1)) # Change mode to solo
+                            time.sleep(0.5)  # Allow a moment for the mode change
+                            # --- END OF THE FIX ---
+
+                            # Create the request packet for the target player
+                            invskwad_packet = self.request_join_squad(player_id_str)
+                            spam_count = 30  # You can adjust this value
+
+                            # Loop to send the packet multiple times
+                            for _ in range(spam_count):
+                                socket_client.send(invskwad_packet)
+                                sleep(0.1)  # A small delay to prevent server issues
+
+                            # Send a final success message
+                            clients.send(
+                                self.GenResponsMsg(
+                                    f"[C][B][00FF00]Successfully Sent {spam_count} Join Requests!", uid
+                                )
+                            )
+
+                            # Post-spam cleanup is still good practice.
+                            sleep(1)
+                            socket_client.send(self.leave_s())
+                        
+                        else:
+                            # Handle cases where the player ID is missing or invalid
+                            clients.send(
+                                self.GenResponsMsg(
+                                    "[C][B][FF0000]Invalid command format. Please use: /sm <player_id>", uid
+                                )
+                            )
+
+                    except Exception as e:
+                        logging.error(f"Error in /sm command: {e}. Restarting.")
+                        try:
+                            # Attempt to notify the user about the error before restarting
+                            json_result = get_available_room(data.hex()[10:])
+                            parsed_data = json.loads(json_result)
+                            uid = parsed_data["5"]["data"]["1"]["data"]
+                            clients.send(self.GenResponsMsg("[C][B][FF0000]An error occurred. Restarting bot...", uid))
+                        except:
+                            pass 
+                        restart_program()                        
