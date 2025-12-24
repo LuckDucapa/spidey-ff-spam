@@ -1,18 +1,36 @@
 from flask import Flask, request, jsonify
-import requests
 import os
+import asyncio
+# You must include 'telethon' in your requirements.txt
+from telethon import TelegramClient
+from telethon.sessions import StringSession
 
 app = Flask(__name__)
 
 # ==========================================
-# ⚡ CONFIGURATION (FILL THIS!) ⚡
+# ⚡ CONFIGURATION ⚡
 # ==========================================
-# 1. Your Bot Token from BotFather
-TG_BOT_TOKEN = "8292738024:AAHjghTZvUZmLKV091qGe3A5yr_OdFIYv8I" 
 
-# 2. Your Personal Telegram User ID (So the bot sends the command to the chat where Termux is listening)
-ADMIN_CHAT_ID = "-1003690232509"
+# 1. Telegram API Credentials (from my.telegram.org)
+API_ID = 32835279 # Replace with your API ID (Integer)
+API_HASH = "910f180788d480b936f5e09c0da202c7" # Replace with your API Hash
+
+# 2. The Long String you got from Step 1
+SESSION_STRING = "1BVtsOK8Buw3DIhgQn5ZeYoNolWCFg77KKOEzmMrMVmzRy_u6rMzwqZb0RxB4UDgIdadjWEozlr26BrVXhdKuJLRNN-rsKQaODOubpmUpcksUvp1w0gBvR08-PulJHyXqsoybmaIpgn5993PVJKM-djpqFrafDnA_ozYBZKvwpS4gqGFCWHY8lgWCUvomxdm7MynGR5NKHpkEsJGSYHCZ6Tzv2jgq6z0pXpFfndvVgt7xS0GlTsk4T-qZZwaPWW7TCFWGYyjrhl65N4Eq5T0OT8hJ86xIBl61ra2mmwbIzMNDab177y6xi4-jPs6F5o75LQg1NU0WWes_ZOBF8FAdPTKvaanMqxk="
+
+# 3. The Group ID (Target Chat)
+# Ensure it's an integer (e.g., -100123456789)
+ADMIN_CHAT_ID = -1003690232509 
+
 # ==========================================
+
+async def send_as_user(command):
+    try:
+        # Connect using the saved session (Logs in as YOU)
+        async with TelegramClient(StringSession(SESSION_STRING), API_ID, API_HASH) as client:
+            await client.send_message(ADMIN_CHAT_ID, command)
+    except Exception as e:
+        print(f"Telethon Error: {e}")
 
 @app.route('/spam', methods=['GET'])
 def spam_handler():
@@ -27,19 +45,19 @@ def spam_handler():
             "Join": "https://t.me/TubeGroww"
         }), 400
 
-    # 2. Send Command to Telegram
-    # This sends "/s7 <uid>" to your Telegram Chat.
-    # Your Termux Bot (which is polling) will read this and execute the spam.
+    # 2. Send Command to Telegram (AS USER)
+    command = f"/s7 {uid}"
+    
+    # Run the async Telethon function within Flask
     try:
-        command = f"/s7 {uid}"
-        url = f"https://api.telegram.org/bot{TG_BOT_TOKEN}/sendMessage"
-        data = {
-            "chat_id": ADMIN_CHAT_ID,
-            "text": command
-        }
-        requests.post(url, json=data)
-    except:
-        pass # Fail silently, user still gets success message
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        loop.run_until_complete(send_as_user(command))
+        loop.close()
+    except Exception as e:
+        # Fail silently regarding the Telegram part, as requested, 
+        # but print to Vercel logs for debugging
+        print(f"Execution Error: {e}")
 
     # 3. Return Success JSON
     response = {
